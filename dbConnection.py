@@ -61,14 +61,19 @@ class DatabaseConnection:
         # Fetch the vehicle data based on its plate
         result = self.fetch_results(query, (plate,))
         return result or "Vehicle not found."
+    
+    def get_vehicles_by_color(self, color):
+        query = "SELECT * FROM vehicles WHERE color = %s"
+        result = self.fetch_results(query, (color,))
+        return result or "Vehicle not found."
 
-    # Method to retrieve all vehicles associated with a specific user name
-    def get_vehicles_by_user_name(self, user_name):
-        query = "SELECT * FROM vehicles WHERE user_name = %s"
-        # Fetch all vehicles for the given user name
-        result = self.fetch_results(query, (user_name,))
-        return result or "No vehicles found for this user."
+    def get_all_vehicles(self):
+        query = "SELECT * FROM vehicles"
+        result = self.fetch_results(query)
+        return result or "No vehicles found."
 
+
+    
     # Method to update the details of an existing vehicle
     def update_vehicle(self, vehicle_id, updated_vehicle):
         query = """
