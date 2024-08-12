@@ -1,6 +1,9 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QPushButton, QLineEdit, QMessageBox, QFormLayout, QInputDialog, QApplication
+from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QPushButton, QLineEdit, QMessageBox, 
+                             QFormLayout, QInputDialog, QApplication, QComboBox, QTableWidget, 
+                             QTableWidgetItem, QDialog)
 from dbConnection import DatabaseConnection
 from vehicle import Vehicle
+from EditVehicleDialog import EditVehicleDialog
 import sys
 
 class MainWindow(QMainWindow):
@@ -11,11 +14,10 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("Vehicle Management System")
-        self.setGeometry(100, 100, 400, 300)
+        self.setGeometry(100, 100, 600, 400)
 
-        self.layout = QVBoxLayout() #initialization main layout
-
-        self.form_layout = QFormLayout() #Layout for form fields
+        self.layout = QVBoxLayout() # Initialization main layout
+        self.form_layout = QFormLayout() # Layout for form fields
 
         # Input fields for vehicle details
         self.name_input = QLineEdit(self)
@@ -33,42 +35,27 @@ class MainWindow(QMainWindow):
         self.form_layout.addRow("Color:", self.color_input)
         self.form_layout.addRow("Renavam:", self.renavam_input)
 
-        self.layout.addLayout(self.form_layout)  #Add the form layout to the main layout
+        self.layout.addLayout(self.form_layout)  # Add the form layout to the main layout
 
-       # Buttons to add vehicles
+        # Buttons to add vehicles
         self.add_button = QPushButton("Add Vehicle", self)
         self.add_button.clicked.connect(self.add_vehicle)
         self.layout.addWidget(self.add_button)
 
-        # Search field by id
-        self.search_id_input = QLineEdit(self)
-        self.search_id_input.setPlaceholderText("Search by Id...")
-        self.layout.addWidget(self.search_id_input)
-
-        # Search field by plate
+        # search field
         self.search_input = QLineEdit(self)
-        self.search_input.setPlaceholderText("Search by Plate...")
+        self.search_input.setPlaceholderText("Enter search term...")
         self.layout.addWidget(self.search_input)
 
-        # Search field by color
-        self.search_color_input = QLineEdit(self)
-        self.search_color_input.setPlaceholderText("Search by Color...")
-        self.layout.addWidget(self.search_color_input)
+        # ComboBox to select search type
+        self.search_type_combobox = QComboBox(self)
+        self.search_type_combobox.addItems(["Search by ID", "Search by Plate", "Search by Color"])
+        self.layout.addWidget(self.search_type_combobox)
 
-         # Search button by id
-        self.search_id_button = QPushButton("Search by Id", self)
-        self.search_id_button.clicked.connect(self.search_vehicle_by_id)
-        self.layout.addWidget(self.search_id_button)
-
-        # Search button by plate
-        self.search_button = QPushButton("Search by Plate", self)
-        self.search_button.clicked.connect(self.search_vehicle_by_plate)
+        # Search button
+        self.search_button = QPushButton("Search", self)
+        self.search_button.clicked.connect(self.perform_search)
         self.layout.addWidget(self.search_button)
-
-        # Search button by color
-        self.search_color_button = QPushButton("Search by Color", self)
-        self.search_color_button.clicked.connect(self.search_vehicle_by_color)
-        self.layout.addWidget(self.search_color_button)
 
         # Button to list all vehicles
         self.list_all_button = QPushButton("List All Vehicles", self)
@@ -76,82 +63,137 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.list_all_button)
 
         # Button to update a vehicle
-        self.update_button = QPushButton("Update Vehicle", self)
-        self.update_button.clicked.connect(self.edit_vehicle)
-        self.layout.addWidget(self.update_button)
+        self.Edit_button = QPushButton("Edit Vehicle", self)
+        self.Edit_button.clicked.connect(self.edit_vehicle)
+        self.layout.addWidget(self.Edit_button)
 
         # Button to delete a vehicle by ID
         self.delete_button = QPushButton("Delete Vehicle", self)
         self.delete_button.clicked.connect(self.delete_vehicle)
         self.layout.addWidget(self.delete_button)
 
+        # Table to display vehicle data
+        self.table_widget = QTableWidget()
+        self.table_widget.setSelectionBehavior(QTableWidget.SelectRows)  # Select entire rows
+        self.table_widget.setSelectionMode(QTableWidget.SingleSelection)  # Allow only one selection at a time
+        self.layout.addWidget(self.table_widget)
+
         container = QWidget()
         container.setLayout(self.layout)
         self.setCentralWidget(container)
 
-    def search_vehicle_by_id(self):
-        id = self.search_id_input.text()
-        result = self.db.get_vehicle_by_id(id)
-        if result == "Vehicle not found.":
-            QMessageBox.warning(self, "Error", "Vehicle not found.")
-        else:
-            QMessageBox.information(self, "Vehicle Found", f"Details: {result}")
+        self.list_all_vehicles()
 
-    def search_vehicle_by_plate(self):
-        plate = self.search_input.text()
-        result = self.db.get_vehicle_by_plate(plate)
-        if result == "Vehicle not found.":
-            QMessageBox.warning(self, "Error", "Vehicle not found.")
-        else:
-            QMessageBox.information(self, "Vehicle Found", f"Details: {result}")
+    def perform_search(self):
+        search_type = self.search_type_combobox.currentText()
+        search_term = self.search_input.text()
 
-    def search_vehicle_by_color(self):
-        color = self.search_color_input.text()
-        result = self.db.get_vehicles_by_color(color)
-        if result == "Vehicle not found.":
-            QMessageBox.warning(self, "Error", "No vehicles found with this color.")
-        else:
-            QMessageBox.information(self, "Vehicles Found", f"Details: {result}")
+        if search_type == "Search by ID":
+            results = self.db.get_vehicle_by_id(search_term)
+            if results == "Vehicle not found.":
+                QMessageBox.warning(self, "Error", "Vehicle not found.")
+                self.table_widget.setRowCount(0)
+            else:
+                self.update_table(results)
+
+        elif search_type == "Search by Plate":
+            results = self.db.get_vehicle_by_plate(search_term)
+            if results == "Vehicle not found.":
+                QMessageBox.warning(self, "Error", "Vehicle not found.")
+                self.table_widget.setRowCount(0)
+            else:
+                self.update_table(results)
+
+        elif search_type == "Search by Color":
+            results = self.db.get_vehicles_by_color(search_term)
+            if results == "Vehicle not found.":
+                QMessageBox.warning(self, "Error", "No vehicles found with this color.")
+                self.table_widget.setRowCount(0)
+            else:
+                self.update_table(results)
 
     def list_all_vehicles(self):
-        result = self.db.get_all_vehicles()
-        if not result:
+        results = self.db.get_all_vehicles()
+        if not results:
             QMessageBox.warning(self, "Error", "No vehicles found.")
+            self.table_widget.setRowCount(0)
         else:
-            QMessageBox.information(self, "All Vehicles", f"Details: {result}")
+            self.update_table(results)
+
+    def update_table(self, data):
+        self.table_widget.setRowCount(len(data))
+        self.table_widget.setColumnCount(7)  # Number of columns (adjust if needed)
+        self.table_widget.setHorizontalHeaderLabels(["ID", "User Name", "Plate", "Brand", "Year", "Color", "Renavam"])
+
+        for row_num, row_data in enumerate(data):
+            for col_num, item in enumerate(row_data):
+                self.table_widget.setItem(row_num, col_num, QTableWidgetItem(str(item)))
 
     def add_vehicle(self):
-            vehicle = Vehicle(
-                id=None,
-                user_name=self.name_input.text(),
-                plate=self.plate_input.text(),
-                brand=self.brand_input.text(),
-                year=int(self.year_input.text()),
-                color=self.color_input.text(),
-                renavam=self.renavam_input.text()
-            )
-            self.db.add_vehicle(vehicle)
-            QMessageBox.information(self, "Success", "Vehicle added successfully!")
+        # Verifica se algum campo está vazio
+        if not all([self.name_input.text(), self.plate_input.text(), self.brand_input.text(),
+                    self.year_input.text(), self.color_input.text(), self.renavam_input.text()]):
+            QMessageBox.warning(self, "Input Error", "Please fill in all fields.")
+            return
 
-    def edit_vehicle(self):
-        vehicle_id = int(QInputDialog.getText(self, "Vehicle ID", "Enter the vehicle ID to edit:")[0])
+        try:
+            year = int(self.year_input.text())
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", "Year must be a valid number.")
+            return
+
         vehicle = Vehicle(
-            id=vehicle_id,
+            id=None,
             user_name=self.name_input.text(),
             plate=self.plate_input.text(),
             brand=self.brand_input.text(),
-            year=int(self.year_input.text()),
+            year=year,
             color=self.color_input.text(),
             renavam=self.renavam_input.text()
         )
-        self.db.edit_vehicle(vehicle_id, vehicle)
-        QMessageBox.information(self, "Success", "Vehicle updated successfully!")
+        self.db.add_vehicle(vehicle)
+        QMessageBox.information(self, "Success", "Vehicle added successfully!")
+        
+        # Clear input fields after adding
+        self.name_input.clear()
+        self.plate_input.clear()
+        self.brand_input.clear()
+        self.year_input.clear()
+        self.color_input.clear()
+        self.renavam_input.clear()
+
+        self.list_all_vehicles()
+
+    def edit_vehicle(self):
+        selected_items = self.table_widget.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Error", "Please select a vehicle to edit.")
+            return
+        
+        selected_row = selected_items[0].row()
+        vehicle_id = self.table_widget.item(selected_row, 0).text()
+
+        # Fetch current details of the selected vehicle
+        vehicle_details = self.db.get_vehicle_by_id(vehicle_id)
+        if vehicle_details == "Vehicle not found.":
+            QMessageBox.warning(self, "Error", "Vehicle not found.")
+            return
+        
+        # Open the edit dialog
+        dialog = EditVehicleDialog(vehicle_id, vehicle_details[0], self.db, self)
+        if dialog.exec_() == QDialog.Accepted:
+            self.list_all_vehicles()  # Refresh the table after update
 
     def delete_vehicle(self):
-        vehicle_id, ok = QInputDialog.getInt(self, "Delete Vehicle", "Enter Vehicle ID:")
-        if ok:
-            self.db.delete_vehicle(vehicle_id)
-            QMessageBox.information(self, "Success", f"Vehicle with ID {vehicle_id} deleted.")
+        selected_items = self.table_widget.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "Error", "Please select a vehicle to delete.")
+            return
+        
+        vehicle_id = self.table_widget.item(selected_items[0].row(), 0).text()
+        self.db.delete_vehicle(int(vehicle_id))
+        QMessageBox.information(self, "Success", f"Vehicle with ID {vehicle_id} deleted.")
+        self.list_all_vehicles()  # Refresh the table after deletion
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
