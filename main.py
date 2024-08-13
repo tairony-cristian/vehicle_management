@@ -1,6 +1,7 @@
-from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QPushButton, QLineEdit, QMessageBox, 
-                             QFormLayout, QInputDialog, QApplication, QComboBox, QTableWidget, 
-                             QTableWidgetItem, QDialog, QHBoxLayout,QHeaderView)
+from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QPushButton, 
+    QLineEdit, QMessageBox, QFormLayout, QApplication, QComboBox, QTableWidget,
+    QTableWidgetItem, QDialog, QHBoxLayout,QHeaderView
+)
 from dbConnection import DatabaseConnection
 from vehicle import Vehicle
 from EditVehicleDialog import EditVehicleDialog
@@ -15,11 +16,10 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         self.setWindowTitle("Vehicle Management System")
         self.setGeometry(100, 100, 1200, 600)
-
         self.layout = QVBoxLayout() # Initialization main layout
 
+        # Search Layout
         search_layout = QHBoxLayout()
-
          # search field
         self.search_input = QLineEdit(self)
         self.search_input.setPlaceholderText("Enter search term...")
@@ -38,7 +38,9 @@ class MainWindow(QMainWindow):
         # Add the search layout to the main layout
         self.layout.addLayout(search_layout)
 
+        # Form Layout for Vehicle Details
         # Input fields for vehicle details
+        self.form_layout = QFormLayout() # Layout for form fields
         self.name_input = QLineEdit(self)
         self.plate_input = QLineEdit(self)
         self.brand_input = QLineEdit(self)
@@ -46,20 +48,20 @@ class MainWindow(QMainWindow):
         self.color_input = QLineEdit(self)
         self.renavam_input = QLineEdit(self)
 
-
         # Add fields to the form layout
-        self.form_layout = QFormLayout() # Layout for form fields
         self.form_layout.addRow("User Name:", self.name_input)
         self.form_layout.addRow("Plate:", self.plate_input)
         self.form_layout.addRow("Brand:", self.brand_input)
         self.form_layout.addRow("Year:", self.year_input)
         self.form_layout.addRow("Color:", self.color_input)
         self.form_layout.addRow("Renavam:", self.renavam_input)
+
         self.layout.addLayout(self.form_layout)  # Add the form layout to the main layout
 
         # Button layout to align buttons side by side
         button_layout = QHBoxLayout()
 
+        # Button Layout
         # Buttons to add vehicles
         self.add_button = QPushButton("Add Vehicle", self)
         self.add_button.clicked.connect(self.add_vehicle)
@@ -93,6 +95,7 @@ class MainWindow(QMainWindow):
         container.setLayout(self.layout)
         self.setCentralWidget(container)
 
+        # Load all vehicles at startup
         self.list_all_vehicles()
 
     def perform_search(self):
@@ -166,16 +169,18 @@ class MainWindow(QMainWindow):
         )
         self.db.add_vehicle(vehicle)
         QMessageBox.information(self, "Success", "Vehicle added successfully!")
+
+        self.clear_inputs()
+        self.list_all_vehicles()
         
-        # Clear input fields after adding
+        # Function clear input fields 
+    def clear_inputs(self):
         self.name_input.clear()
         self.plate_input.clear()
         self.brand_input.clear()
         self.year_input.clear()
         self.color_input.clear()
         self.renavam_input.clear()
-
-        self.list_all_vehicles()
 
     def edit_vehicle(self):
         selected_items = self.table_widget.selectedItems()
@@ -186,7 +191,7 @@ class MainWindow(QMainWindow):
         selected_row = selected_items[0].row()
         vehicle_id = self.table_widget.item(selected_row, 0).text()
 
-        # Fetch current details of the selected vehicle
+        # Fetch details of current selected vehicles
         vehicle_details = self.db.get_vehicle_by_id(vehicle_id)
         if vehicle_details == "Vehicle not found.":
             QMessageBox.warning(self, "Error", "Vehicle not found.")
