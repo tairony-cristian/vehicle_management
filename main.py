@@ -6,6 +6,7 @@ from dbConnection import DatabaseConnection
 from vehicle import Vehicle
 from EditVehicleDialog import EditVehicleDialog
 import sys
+from style import Style
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -171,7 +172,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "Success", "Vehicle added successfully!")
 
         self.clear_inputs()
-        self.list_all_vehicles()
+        self.list_all_vehicles() # Refresh the table after update
         
         # Function clear input fields 
     def clear_inputs(self):
@@ -200,7 +201,7 @@ class MainWindow(QMainWindow):
         # Open the edit dialog
         dialog = EditVehicleDialog(vehicle_id, vehicle_details[0], self.db, self)
         if dialog.exec_() == QDialog.Accepted:
-            self.list_all_vehicles()  # Refresh the table after update
+            self.list_all_vehicles()
 
     def delete_vehicle(self):
         selected_items = self.table_widget.selectedItems()
@@ -208,13 +209,27 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error", "Please select a vehicle to delete.")
             return
         
-        vehicle_id = self.table_widget.item(selected_items[0].row(), 0).text()
-        self.db.delete_vehicle(int(vehicle_id))
-        QMessageBox.information(self, "Success", f"Vehicle with ID {vehicle_id} deleted.")
-        self.list_all_vehicles()  # Refresh the table after deletion
+        selected_row = selected_items[0].row()
+        vehicle_id = self.table_widget.item(selected_row, 0).text()
+        plate = self.table_widget.item(selected_row, 2).text() 
+
+        # Ask for confirmation
+        reply = QMessageBox.question(
+            self, 
+            'Confirm Deletion', 
+            f"Are you sure you want to delete the vehicle with Plate: {plate}?", 
+            QMessageBox.Yes | QMessageBox.No, 
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            self.db.delete_vehicle(int(vehicle_id))
+            QMessageBox.information(self, "Success", f"Vehicle with Plate {plate} deleted.")
+            self.list_all_vehicles()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    Style.apply_style(app)
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
