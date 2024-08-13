@@ -71,8 +71,6 @@ class DatabaseConnection:
         query = "SELECT * FROM vehicles"
         result = self.fetch_results(query)
         return result or "No vehicles found."
-
-
     
     # Method to update the details of an existing vehicle
     def update_vehicle(self, vehicle_id, updated_vehicle):

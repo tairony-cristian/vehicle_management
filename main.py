@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QPushButton, QLineEdit, QMessageBox, 
                              QFormLayout, QInputDialog, QApplication, QComboBox, QTableWidget, 
-                             QTableWidgetItem, QDialog)
+                             QTableWidgetItem, QDialog, QHBoxLayout,QHeaderView)
 from dbConnection import DatabaseConnection
 from vehicle import Vehicle
 from EditVehicleDialog import EditVehicleDialog
@@ -14,10 +14,29 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("Vehicle Management System")
-        self.setGeometry(100, 100, 600, 400)
+        self.setGeometry(100, 100, 1200, 600)
 
         self.layout = QVBoxLayout() # Initialization main layout
-        self.form_layout = QFormLayout() # Layout for form fields
+
+        search_layout = QHBoxLayout()
+
+         # search field
+        self.search_input = QLineEdit(self)
+        self.search_input.setPlaceholderText("Enter search term...")
+        search_layout.addWidget(self.search_input)
+
+        # ComboBox to select search type
+        self.search_type_combobox = QComboBox(self)
+        self.search_type_combobox.addItems(["Search by ID", "Search by Plate", "Search by Color"])
+        search_layout.addWidget(self.search_type_combobox)
+
+        # Search button
+        self.search_button = QPushButton("Search", self)
+        self.search_button.clicked.connect(self.perform_search)
+        search_layout.addWidget(self.search_button)
+
+        # Add the search layout to the main layout
+        self.layout.addLayout(search_layout)
 
         # Input fields for vehicle details
         self.name_input = QLineEdit(self)
@@ -27,50 +46,42 @@ class MainWindow(QMainWindow):
         self.color_input = QLineEdit(self)
         self.renavam_input = QLineEdit(self)
 
+
         # Add fields to the form layout
+        self.form_layout = QFormLayout() # Layout for form fields
         self.form_layout.addRow("User Name:", self.name_input)
         self.form_layout.addRow("Plate:", self.plate_input)
         self.form_layout.addRow("Brand:", self.brand_input)
         self.form_layout.addRow("Year:", self.year_input)
         self.form_layout.addRow("Color:", self.color_input)
         self.form_layout.addRow("Renavam:", self.renavam_input)
-
         self.layout.addLayout(self.form_layout)  # Add the form layout to the main layout
+
+        # Button layout to align buttons side by side
+        button_layout = QHBoxLayout()
 
         # Buttons to add vehicles
         self.add_button = QPushButton("Add Vehicle", self)
         self.add_button.clicked.connect(self.add_vehicle)
-        self.layout.addWidget(self.add_button)
-
-        # search field
-        self.search_input = QLineEdit(self)
-        self.search_input.setPlaceholderText("Enter search term...")
-        self.layout.addWidget(self.search_input)
-
-        # ComboBox to select search type
-        self.search_type_combobox = QComboBox(self)
-        self.search_type_combobox.addItems(["Search by ID", "Search by Plate", "Search by Color"])
-        self.layout.addWidget(self.search_type_combobox)
-
-        # Search button
-        self.search_button = QPushButton("Search", self)
-        self.search_button.clicked.connect(self.perform_search)
-        self.layout.addWidget(self.search_button)
+        button_layout.addWidget(self.add_button)
 
         # Button to list all vehicles
         self.list_all_button = QPushButton("List All Vehicles", self)
         self.list_all_button.clicked.connect(self.list_all_vehicles)
-        self.layout.addWidget(self.list_all_button)
+        button_layout.addWidget(self.list_all_button)
 
         # Button to update a vehicle
         self.Edit_button = QPushButton("Edit Vehicle", self)
         self.Edit_button.clicked.connect(self.edit_vehicle)
-        self.layout.addWidget(self.Edit_button)
+        button_layout.addWidget(self.Edit_button)
 
         # Button to delete a vehicle by ID
         self.delete_button = QPushButton("Delete Vehicle", self)
         self.delete_button.clicked.connect(self.delete_vehicle)
-        self.layout.addWidget(self.delete_button)
+        button_layout.addWidget(self.delete_button)
+
+       # Add the button layout to the main layout
+        self.layout.addLayout(button_layout) 
 
         # Table to display vehicle data
         self.table_widget = QTableWidget()
@@ -128,6 +139,8 @@ class MainWindow(QMainWindow):
         for row_num, row_data in enumerate(data):
             for col_num, item in enumerate(row_data):
                 self.table_widget.setItem(row_num, col_num, QTableWidgetItem(str(item)))
+        header = self.table_widget.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)  # Adjust columns proportionally to the window size
 
     def add_vehicle(self):
         # Verifica se algum campo está vazio
